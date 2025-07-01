@@ -11,3 +11,4 @@ __pycache__/
 ml_results/
 venv/
 models/
+!prediction_app/models/
