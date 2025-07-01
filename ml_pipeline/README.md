@@ -7,14 +7,14 @@ This project implements a comprehensive machine learning pipeline for poverty pr
 ```
 ml_pipeline/
 ├── __init__.py
-├── data_analyzer.py      # Data analysis and exploration
-├── feature_engineer.py   # Feature extraction and preprocessing
-├── linear_models.py      # Linear and logistic regression models
-├── neural_network.py     # Keras neural network models
-├── model_trainer.py      # Pipeline orchestration
-├── main.py              # Main execution script
-├── requirements.txt     # Dependencies
-└── README.md           # This file
+├── data_analyzer.py      # Análisis de datos y exploración
+├── feature_engineer.py   # Extracción de características y preprocesamiento
+├── linear_models.py      # Modelos de regresión lineal y logística
+├── neural_network.py     # Redes neuronales artificiales
+├── model_trainer.py      # Orquestación del pipeline
+├── main.py              # Script de ejecución principal
+├── requirements.txt     # Dependencias
+└── README.md           # Este archivo
 ```
 
 ## SOLID Principles Implementation
@@ -67,11 +67,11 @@ ml_pipeline/
 
 ### Pipeline Components
 
-1. **Data Analysis**: Comprehensive dataset exploration and statistics
-2. **Feature Engineering**: Statistical feature extraction and preprocessing
-3. **Model Training**: Multiple model types with hyperparameter tuning
-4. **Model Evaluation**: Cross-validation and performance metrics
-5. **Results Generation**: Comprehensive reports and visualizations
+1. **Data Analysis**: Análisis exploratorio de datos y estadísticas
+2. **Feature Engineering**: Extracción de características estadísticas y preprocesamiento
+3. **Model Training**: Múltiples modelos con ajuste de hiperparámetros
+4. **Model Evaluation**: Validación cruzada y métricas de rendimiento
+5. **Results Generation**: Generación de informes y visualizaciones
 
 ## Usage
 

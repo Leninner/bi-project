@@ -437,6 +437,7 @@ class ModelTrainer:
             self.plot_model_comparison()
         self.plot_model_results(self.model_selection)
         self.save_results_summary()
+        self.generate_confusion_matrices_and_metrics()
         print(f"\nAll results saved to: {self.output_dir}")
     
     def plot_model_comparison(self, tipo: str = "both"):
@@ -574,7 +575,121 @@ class ModelTrainer:
             json.dump(summary, f, indent=2, default=str)
         
         print(f"\n📄 Results summary saved to: {self.output_dir}/reports/results_summary_{self.timestamp}.json")
-    
+
+    def generate_confusion_matrices_and_metrics(self):
+        """Generate confusion matrices and regression metrics for all trained models"""
+        print("=" * 60)
+        print("STEP 6.1: GENERATING CONFUSION MATRICES AND REGRESSION METRICS")
+        print("=" * 60)
+        
+        if self.X_test is None or self.y_test is None:
+            print("❌ Test data not available. Skipping confusion matrix generation.")
+            return
+        
+        # Create directories for confusion matrices and regression metrics
+        confusion_dir = f"{self.output_dir}/confusion_matrices"
+        regression_dir = f"{self.output_dir}/regression_metrics"
+        os.makedirs(confusion_dir, exist_ok=True)
+        os.makedirs(regression_dir, exist_ok=True)
+        
+        print(f"\n📁 Saving confusion matrices to: {confusion_dir}")
+        print(f"📁 Saving regression metrics to: {regression_dir}")
+        
+        # Generate confusion matrices and regression metrics for linear models
+        if self.linear_models.models:
+            print("\n🔧 Generating Linear Models Matrices...")
+            try:
+                # Generate confusion matrices for classification models
+                linear_cm = self.linear_models.generate_all_confusion_matrices(
+                    X_test=self.X_test,
+                    y_test=self.y_test,
+                    save_dir=confusion_dir
+                )
+                print(f"   ✅ Confusion matrices generated: {len(linear_cm)}")
+                
+                # Generate regression metrics for regression models
+                linear_reg = self.linear_models.generate_all_regression_matrices(
+                    X_test=self.X_test,
+                    y_test=self.y_test,
+                    save_dir=regression_dir
+                )
+                print(f"   ✅ Regression metrics generated: {len(linear_reg)}")
+                
+            except Exception as e:
+                print(f"   ❌ Error generating linear models matrices: {e}")
+        
+        # Generate confusion matrices and regression metrics for neural networks
+        if self.neural_networks.models:
+            print("\n🧠 Generating Neural Network Matrices...")
+            try:
+                # Generate confusion matrices for classification models
+                nn_cm = self.neural_networks.generate_all_confusion_matrices(
+                    X_test=self.X_test.values,
+                    y_test=self.y_test.values,
+                    save_dir=confusion_dir
+                )
+                print(f"   ✅ Confusion matrices generated: {len(nn_cm)}")
+                
+                # Generate regression metrics for regression models
+                nn_reg = self.neural_networks.generate_all_regression_matrices(
+                    X_test=self.X_test.values,
+                    y_test=self.y_test.values,
+                    save_dir=regression_dir
+                )
+                print(f"   ✅ Regression metrics generated: {len(nn_reg)}")
+                
+            except Exception as e:
+                print(f"   ❌ Error generating neural network matrices: {e}")
+        
+        # Create summary report
+        self.create_matrices_summary_report(confusion_dir, regression_dir)
+        
+        print(f"\n✅ Confusion matrices and regression metrics generation completed!")
+
+    def create_matrices_summary_report(self, confusion_dir: str, regression_dir: str):
+        """Create a summary report of generated confusion matrices and regression metrics"""
+        import glob
+        
+        # Count generated files
+        confusion_files = glob.glob(f"{confusion_dir}/*.png")
+        regression_files = glob.glob(f"{regression_dir}/*.png")
+        
+        summary = {
+            'timestamp': self.timestamp,
+            'confusion_matrices': {
+                'directory': confusion_dir,
+                'files_generated': len(confusion_files),
+                'file_list': [os.path.basename(f) for f in confusion_files]
+            },
+            'regression_metrics': {
+                'directory': regression_dir,
+                'files_generated': len(regression_files),
+                'file_list': [os.path.basename(f) for f in regression_files]
+            },
+            'total_files': len(confusion_files) + len(regression_files)
+        }
+        
+        # Save summary report
+        summary_path = f"{self.output_dir}/reports/matrices_summary_{self.timestamp}.json"
+        with open(summary_path, 'w') as f:
+            json.dump(summary, f, indent=2, default=str)
+        
+        print(f"\n📊 Matrices Summary Report:")
+        print(f"   📁 Confusion Matrices: {len(confusion_files)} files")
+        print(f"   📁 Regression Metrics: {len(regression_files)} files")
+        print(f"   📄 Summary saved to: {summary_path}")
+        
+        # Print file list
+        if confusion_files:
+            print(f"\n📋 Confusion Matrix Files:")
+            for file in confusion_files:
+                print(f"   - {os.path.basename(file)}")
+        
+        if regression_files:
+            print(f"\n📋 Regression Metrics Files:")
+            for file in regression_files:
+                print(f"   - {os.path.basename(file)}")
+
     def run_complete_pipeline(self, target_method: str = 'income_threshold', 
                              train_linear: bool = True, train_neural: bool = True) -> Dict:
         """Run the complete machine learning pipeline with selective model training"""

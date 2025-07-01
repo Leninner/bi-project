@@ -532,6 +532,245 @@ class LinearModels:
         
         plt.show()
 
+    def generate_confusion_matrix(self, model_name: str, X_test: pd.DataFrame, y_test: pd.Series, 
+                                 save_path: str = None, class_names: List[str] = None) -> np.ndarray:
+        """
+        Generate and plot confusion matrix for classification models
+        
+        Args:
+            model_name: Name of the model to evaluate
+            X_test: Test features
+            y_test: Test target
+            save_path: Path to save the confusion matrix plot
+            class_names: List of class names for labels (default: ['No Poverty', 'Poverty'])
+            
+        Returns:
+            Confusion matrix as numpy array
+        """
+        if model_name not in self.models:
+            raise ValueError(f"Model {model_name} not found. Available models: {list(self.models.keys())}")
+        
+        model = self.models[model_name]
+        
+        # Check if it's a classification model
+        if not hasattr(model, 'predict_proba'):
+            raise ValueError(f"Model {model_name} is not a classification model")
+        
+        # Make predictions
+        y_pred = model.predict(X_test)
+        
+        # Generate confusion matrix
+        cm = confusion_matrix(y_test, y_pred)
+        
+        # Set default class names if not provided
+        if class_names is None:
+            class_names = ['No Poverty', 'Poverty']
+        
+        # Create confusion matrix plot
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                   xticklabels=class_names,
+                   yticklabels=class_names)
+        plt.xlabel('Predicted', fontweight='bold')
+        plt.ylabel('Actual', fontweight='bold')
+        plt.title(f'Confusion Matrix - {model_name.replace("_", " ").title()}', fontweight='bold')
+        
+        # Add metrics text
+        tn, fp, fn, tp = cm.ravel()
+        accuracy = (tp + tn) / (tp + tn + fp + fn)
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+        
+        metrics_text = f'Accuracy: {accuracy:.3f}\nPrecision: {precision:.3f}\nRecall: {recall:.3f}\nF1-Score: {f1_score:.3f}'
+        plt.text(0.02, 0.98, metrics_text, transform=plt.gca().transAxes, 
+                verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+        
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, bbox_inches='tight', dpi=300)
+            print(f"Confusion matrix saved to {save_path}")
+        
+        plt.show()
+        
+        # Print detailed metrics
+        print(f"\n=== CONFUSION MATRIX DETAILS FOR {model_name.upper()} ===")
+        print(f"True Negatives (TN): {tn}")
+        print(f"False Positives (FP): {fp}")
+        print(f"False Negatives (FN): {fn}")
+        print(f"True Positives (TP): {tp}")
+        print(f"Accuracy: {accuracy:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
+        print(f"F1-Score: {f1_score:.4f}")
+        
+        return cm
+
+    def generate_regression_metrics_matrix(self, model_name: str, X_test: pd.DataFrame, y_test: pd.Series,
+                                         save_path: str = None) -> Dict:
+        """
+        Generate comprehensive metrics matrix for regression models
+        
+        Args:
+            model_name: Name of the model to evaluate
+            X_test: Test features
+            y_test: Test target
+            save_path: Path to save the metrics visualization
+            
+        Returns:
+            Dictionary with regression metrics
+        """
+        if model_name not in self.models:
+            raise ValueError(f"Model {model_name} not found. Available models: {list(self.models.keys())}")
+        
+        model = self.models[model_name]
+        
+        # Check if it's a regression model
+        if hasattr(model, 'predict_proba'):
+            raise ValueError(f"Model {model_name} is not a regression model")
+        
+        # Make predictions
+        y_pred = model.predict(X_test)
+        
+        # Calculate metrics
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+        mae = np.mean(np.abs(y_test - y_pred))
+        r2 = r2_score(y_test, y_pred)
+        
+        # Calculate additional metrics
+        mape = np.mean(np.abs((y_test - y_pred) / y_test)) * 100
+        residuals = y_test - y_pred
+        
+        metrics = {
+            'mse': mse,
+            'rmse': rmse,
+            'mae': mae,
+            'r2': r2,
+            'mape': mape,
+            'predictions': y_pred,
+            'residuals': residuals
+        }
+        
+        # Create metrics visualization
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(12, 10))
+        
+        # Actual vs Predicted
+        ax1.scatter(y_test, y_pred, alpha=0.6)
+        ax1.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+        ax1.set_xlabel('Actual Values')
+        ax1.set_ylabel('Predicted Values')
+        ax1.set_title('Actual vs Predicted')
+        ax1.grid(True, alpha=0.3)
+        
+        # Residuals plot
+        ax2.scatter(y_pred, residuals, alpha=0.6)
+        ax2.axhline(y=0, color='r', linestyle='--')
+        ax2.set_xlabel('Predicted Values')
+        ax2.set_ylabel('Residuals')
+        ax2.set_title('Residuals Plot')
+        ax2.grid(True, alpha=0.3)
+        
+        # Residuals histogram
+        ax3.hist(residuals, bins=30, alpha=0.7, edgecolor='black')
+        ax3.set_xlabel('Residuals')
+        ax3.set_ylabel('Frequency')
+        ax3.set_title('Residuals Distribution')
+        ax3.grid(True, alpha=0.3)
+        
+        # Metrics summary
+        metrics_text = f'R² Score: {r2:.4f}\nMSE: {mse:.4f}\nRMSE: {rmse:.4f}\nMAE: {mae:.4f}\nMAPE: {mape:.2f}%'
+        ax4.text(0.1, 0.5, metrics_text, transform=ax4.transAxes, fontsize=12,
+                verticalalignment='center', bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.8))
+        ax4.set_title('Regression Metrics Summary')
+        ax4.axis('off')
+        
+        plt.suptitle(f'Regression Analysis - {model_name.replace("_", " ").title()}', fontsize=14, fontweight='bold')
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, bbox_inches='tight', dpi=300)
+            print(f"Regression metrics visualization saved to {save_path}")
+        
+        plt.show()
+        
+        # Print detailed metrics
+        print(f"\n=== REGRESSION METRICS FOR {model_name.upper()} ===")
+        print(f"R² Score: {r2:.4f}")
+        print(f"Mean Squared Error (MSE): {mse:.4f}")
+        print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
+        print(f"Mean Absolute Error (MAE): {mae:.4f}")
+        print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
+        
+        return metrics
+
+    def generate_all_confusion_matrices(self, X_test: pd.DataFrame, y_test: pd.Series,
+                                      save_dir: str = None) -> Dict:
+        """
+        Generate confusion matrices for all classification models
+        
+        Args:
+            X_test: Test features
+            y_test: Test target
+            save_dir: Directory to save confusion matrix plots
+            
+        Returns:
+            Dictionary with confusion matrices for each model
+        """
+        confusion_matrices = {}
+        
+        for model_name in self.models.keys():
+            try:
+                if hasattr(self.models[model_name], 'predict_proba'):
+                    # Classification model
+                    if save_dir:
+                        save_path = f"{save_dir}/confusion_matrix_{model_name}.png"
+                    else:
+                        save_path = None
+                    
+                    cm = self.generate_confusion_matrix(model_name, X_test, y_test, save_path)
+                    confusion_matrices[model_name] = cm
+                    
+            except Exception as e:
+                print(f"Error generating confusion matrix for {model_name}: {e}")
+                continue
+        
+        return confusion_matrices
+
+    def generate_all_regression_matrices(self, X_test: pd.DataFrame, y_test: pd.Series,
+                                       save_dir: str = None) -> Dict:
+        """
+        Generate regression metrics matrices for all regression models
+        
+        Args:
+            X_test: Test features
+            y_test: Test target
+            save_dir: Directory to save regression metrics visualizations
+            
+        Returns:
+            Dictionary with regression metrics for each model
+        """
+        regression_matrices = {}
+        
+        for model_name in self.models.keys():
+            try:
+                if not hasattr(self.models[model_name], 'predict_proba'):
+                    # Regression model
+                    if save_dir:
+                        save_path = f"{save_dir}/regression_metrics_{model_name}.png"
+                    else:
+                        save_path = None
+                    
+                    metrics = self.generate_regression_metrics_matrix(model_name, X_test, y_test, save_path)
+                    regression_matrices[model_name] = metrics
+                    
+            except Exception as e:
+                print(f"Error generating regression metrics for {model_name}: {e}")
+                continue
+        
+        return regression_matrices
+
 
 if __name__ == "__main__":
     # Test linear models
