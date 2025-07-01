@@ -49,7 +49,9 @@ class DataAnalyzer:
             'columns': self.df.columns.tolist(),
             'data_types': self.df.dtypes.to_dict(),
             'missing_values': self.df.isnull().sum().to_dict(),
-            'memory_usage': self.df.memory_usage(deep=True).sum()
+            'memory_usage': self.df.memory_usage(deep=True).sum(),
+            'duplicate_rows': self.df.duplicated().sum(),
+            'unique_values_per_column': {col: self.df[col].nunique() for col in self.df.columns}
         }
         
         self.analysis_results['basic_info'] = info
@@ -92,11 +94,47 @@ class DataAnalyzer:
             'descriptive_stats': self.df[numerical_features].describe().to_dict(),
             'correlation_matrix': correlation_matrix.to_dict(),
             'skewness': self.df[numerical_features].skew().fillna(0).to_dict(),
-            'kurtosis': self.df[numerical_features].kurtosis().fillna(0).to_dict()
+            'kurtosis': self.df[numerical_features].kurtosis().fillna(0).to_dict(),
+            'outliers': self._detect_outliers(numerical_features),
+            'distribution_analysis': self._analyze_distributions(numerical_features)
         }
         
         self.analysis_results['numerical_analysis'] = analysis
         return analysis
+    
+    def _detect_outliers(self, numerical_features: List[str]) -> Dict:
+        """Detect outliers using IQR method"""
+        outliers = {}
+        for feature in numerical_features:
+            Q1 = self.df[feature].quantile(0.25)
+            Q3 = self.df[feature].quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            
+            outlier_count = ((self.df[feature] < lower_bound) | (self.df[feature] > upper_bound)).sum()
+            outliers[feature] = {
+                'count': int(outlier_count),
+                'percentage': float(outlier_count / len(self.df) * 100),
+                'lower_bound': float(lower_bound),
+                'upper_bound': float(upper_bound)
+            }
+        return outliers
+    
+    def _analyze_distributions(self, numerical_features: List[str]) -> Dict:
+        """Analyze distribution characteristics of numerical features"""
+        distributions = {}
+        for feature in numerical_features:
+            data = self.df[feature].dropna()
+            distributions[feature] = {
+                'mean': float(data.mean()),
+                'median': float(data.median()),
+                'std': float(data.std()),
+                'skewness': float(data.skew()),
+                'kurtosis': float(data.kurtosis()),
+                'is_normal': abs(data.skew()) < 1 and abs(data.kurtosis()) < 1
+            }
+        return distributions
     
     def analyze_categorical_features(self) -> Dict:
         """Analyze categorical features"""
@@ -110,28 +148,33 @@ class DataAnalyzer:
             analysis[feature] = {
                 'unique_values': self.df[feature].nunique(),
                 'value_counts': self.df[feature].value_counts().to_dict(),
-                'missing_count': self.df[feature].isnull().sum()
+                'missing_count': self.df[feature].isnull().sum(),
+                'most_common': self.df[feature].mode().iloc[0] if not self.df[feature].mode().empty else None
             }
         
         self.analysis_results['categorical_analysis'] = analysis
         return analysis
     
     def identify_poverty_indicators(self) -> List[str]:
-        """Identify potential poverty indicator columns"""
+        """Identify potential poverty indicator columns with enhanced detection"""
         if self.df is None:
             return []
             
-        # Direct poverty indicators (income-related)
-        income_keywords = ['ingreso', 'salario', 'renta', 'per_capita', 'income', 'salary', 'wage']
+        # Enhanced poverty indicators with more comprehensive coverage
+        income_keywords = ['ingreso', 'salario', 'renta', 'per_capita', 'income', 'salary', 'wage', 'remuneracion']
         
         # Employment/work indicators that correlate with poverty
-        employment_keywords = ['horas', 'trabajo', 'work', 'empleo', 'employment', 'desea_trabajar', 'disponible_trabajar']
+        employment_keywords = ['horas', 'trabajo', 'work', 'empleo', 'employment', 'desea_trabajar', 
+                             'disponible_trabajar', 'ocupacion', 'laboral']
         
         # Education and social indicators
-        social_keywords = ['nivel_instruccion', 'education', 'instruccion', 'escolaridad']
+        social_keywords = ['nivel_instruccion', 'education', 'instruccion', 'escolaridad', 'estudios']
+        
+        # Economic sector and activity indicators
+        sector_keywords = ['sector', 'actividad', 'condact', 'economic']
         
         # Combined keywords for comprehensive poverty detection
-        poverty_keywords = income_keywords + employment_keywords + social_keywords
+        poverty_keywords = income_keywords + employment_keywords + social_keywords + sector_keywords
         
         potential_indicators = []
         
@@ -142,7 +185,8 @@ class DataAnalyzer:
         
         # Add specific known indicators from your dataset
         specific_indicators = ['ingreso_laboral', 'ingreso_per_capita', 'horas_trabajo_semana', 
-                             'desea_trabajar_mas', 'disponible_trabajar_mas', 'nivel_instruccion']
+                             'desea_trabajar_mas', 'disponible_trabajar_mas', 'nivel_instruccion',
+                             'sector_id', 'condact_id']
         
         # Ensure all specific indicators are included if they exist in the dataset
         for indicator in specific_indicators:
@@ -153,7 +197,7 @@ class DataAnalyzer:
         return potential_indicators
     
     def generate_feature_importance_ranking(self) -> List[Tuple[str, float]]:
-        """Generate feature importance ranking based on correlation with poverty indicators"""
+        """Generate feature importance ranking based on correlation with all poverty indicators"""
         if self.df is None:
             return []
             
@@ -161,113 +205,201 @@ class DataAnalyzer:
         if not poverty_indicators:
             return []
         
-        # Use the first poverty indicator as target
-        target = poverty_indicators[0]
         numerical_features = self.df.select_dtypes(include=[np.number]).columns.tolist()
         
-        # Remove target from features
-        features = [f for f in numerical_features if f != target]
+        # Remove poverty indicators from features to avoid self-correlation
+        features = [f for f in numerical_features if f not in poverty_indicators]
         
-        # Calculate correlations with proper error handling
+        # Calculate average correlation with all poverty indicators
+        feature_importance = {}
+        
+        for feature in features:
+            total_correlation = 0.0
+            valid_correlations = 0
+            
+            for indicator in poverty_indicators:
+                try:
+                    # Use pandas corr with min_periods to handle missing data
+                    corr = abs(self.df[feature].corr(self.df[indicator], min_periods=1))
+                    # Handle NaN values
+                    if not pd.isna(corr):
+                        total_correlation += corr
+                        valid_correlations += 1
+                except Exception as e:
+                    print(f"Warning: Could not calculate correlation for {feature} with {indicator}: {e}")
+            
+            # Calculate average correlation across all indicators
+            if valid_correlations > 0:
+                avg_correlation = total_correlation / valid_correlations
+            else:
+                avg_correlation = 0.0
+                
+            feature_importance[feature] = avg_correlation
+        
+        # Convert to list of tuples and sort by importance
+        correlations = [(feature, importance) for feature, importance in feature_importance.items()]
+        correlations.sort(key=lambda x: x[1], reverse=True)
+        
+        # Store detailed results for analysis
+        self.analysis_results['feature_importance'] = {
+            'rankings': correlations,
+            'poverty_indicators_used': poverty_indicators,
+            'total_features_analyzed': len(features)
+        }
+        
+        return correlations
+    
+    def generate_feature_importance_for_indicator(self, target_indicator: str) -> List[Tuple[str, float]]:
+        """Generate feature importance for a specific poverty indicator"""
+        if self.df is None or target_indicator not in self.df.columns:
+            return []
+        
+        numerical_features = self.df.select_dtypes(include=[np.number]).columns.tolist()
+        features = [f for f in numerical_features if f != target_indicator]
+        
         correlations = []
         for feature in features:
             try:
-                # Use pandas corr with min_periods to handle missing data
-                corr = abs(self.df[feature].corr(self.df[target], min_periods=1))
-                # Handle NaN values
-                if pd.isna(corr):
-                    corr = 0.0
-                correlations.append((feature, corr))
+                corr = abs(self.df[feature].corr(self.df[target_indicator], min_periods=1))
+                if not pd.isna(corr):
+                    correlations.append((feature, corr))
             except Exception as e:
-                print(f"Warning: Could not calculate correlation for {feature}: {e}")
-                correlations.append((feature, 0.0))
+                print(f"Warning: Could not calculate correlation for {feature} with {target_indicator}: {e}")
         
-        # Sort by correlation strength
         correlations.sort(key=lambda x: x[1], reverse=True)
-        
-        self.analysis_results['feature_importance'] = correlations
         return correlations
     
-    def run_complete_analysis(self) -> Dict:
-        """Run complete analysis of the dataset"""
-        print("=== COMPLETE DATASET ANALYSIS ===")
+    def compare_feature_importance_across_indicators(self) -> Dict[str, List[Tuple[str, float]]]:
+        """Compare feature importance across different poverty indicators"""
+        if self.df is None:
+            return {}
         
-        # Load data
-        self.load_data()
-        
-        # Run all analyses
-        basic_info = self.get_basic_info()
-        feature_types = self.identify_feature_types()
-        numerical_analysis = self.analyze_numerical_features()
-        categorical_analysis = self.analyze_categorical_features()
         poverty_indicators = self.identify_poverty_indicators()
-        feature_importance = self.generate_feature_importance_ranking()
+        comparisons = {}
         
-        # Create poverty targets using FeatureEngineer
-        print("\n=== POVERTY TARGET CREATION ===")
-        feature_engineer = FeatureEngineer()
+        for indicator in poverty_indicators:
+            if indicator in self.df.columns:
+                comparisons[indicator] = self.generate_feature_importance_for_indicator(indicator)
         
-        # Create poverty targets using both methods
-        poverty_target_income = feature_engineer.create_poverty_target(self.df, method='income_threshold')
-        poverty_target_multi = feature_engineer.create_poverty_target(self.df, method='multi_factor')
+        self.analysis_results['cross_indicator_importance'] = comparisons
+        return comparisons
+    
+    def analyze_data_quality(self) -> Dict:
+        """Analyze overall data quality"""
+        if self.df is None:
+            return {}
         
-        # Analyze poverty target distributions
-        poverty_target_analysis = self.analyze_poverty_targets(poverty_target_income, poverty_target_multi)
+        quality_metrics = {
+            'completeness': {},
+            'consistency': {},
+            'accuracy': {},
+            'overall_score': 0.0
+        }
         
-        # Run new specific analyses
-        print("\n=== SPECIFIC ANALYSES ===")
+        # Completeness analysis
+        total_cells = self.df.shape[0] * self.df.shape[1]
+        missing_cells = self.df.isnull().sum().sum()
+        completeness_score = (total_cells - missing_cells) / total_cells
+        quality_metrics['completeness'] = {
+            'score': completeness_score,
+            'missing_cells': missing_cells,
+            'total_cells': total_cells,
+            'missing_percentage': missing_cells / total_cells * 100
+        }
         
-        # Analysis 1: Informal sector by age (15-24) in Ambato
-        print("Analyzing informal sector employment (15-24 years) in Ambato...")
-        informal_analysis = self.analyze_informal_sector_by_age(15, 24, 2, 10150)
+        # Consistency analysis (check for logical inconsistencies)
+        consistency_issues = []
         
-        # Analysis 2: Underemployment due to insufficient income in Ambato
-        print("Analyzing underemployment due to insufficient income in Ambato...")
-        underemployment_analysis = self.analyze_underemployment_by_income(10150)
+        # Check for logical inconsistencies
+        if 'edad' in self.df.columns and 'nivel_instruccion' in self.df.columns:
+            # Children with high education levels
+            young_high_edu = ((self.df['edad'] < 18) & (self.df['nivel_instruccion'] > 3)).sum()
+            if young_high_edu > 0:
+                consistency_issues.append(f"{young_high_edu} registros con edad < 18 y educación alta")
         
-        # Predictions
-        print("Generating predictions...")
-        informal_prediction = self.predict_informal_sector_growth(15, 24, 2, 10150)
-        underemployment_prediction = self.predict_underemployment_trends(10150)
+        if 'horas_trabajo_semana' in self.df.columns and 'ingreso_laboral' in self.df.columns:
+            # People working many hours with zero income
+            work_no_income = ((self.df['horas_trabajo_semana'] > 20) & (self.df['ingreso_laboral'] == 0)).sum()
+            if work_no_income > 0:
+                consistency_issues.append(f"{work_no_income} registros trabajando >20h con ingreso 0")
         
-        # Print summary
-        print(f"\nDataset Shape: {basic_info.get('shape', 'N/A')}")
-        print(f"Numerical Features: {len(feature_types.get('numerical', []))}")
-        print(f"Categorical Features: {len(feature_types.get('categorical', []))}")
-        print(f"Poverty Indicators: {poverty_indicators}")
-        print(f"\nTop 5 Most Important Features:")
-        for feature, importance in feature_importance[:5]:
-            print(f"  {feature}: {importance:.4f}")
+        consistency_score = 1.0 - (len(consistency_issues) / len(self.df) * 0.1)  # Penalty for inconsistencies
+        quality_metrics['consistency'] = {
+            'score': consistency_score,
+            'issues': consistency_issues,
+            'issue_count': len(consistency_issues)
+        }
         
-        # Print poverty target analysis
-        print(f"\n=== POVERTY TARGET ANALYSIS ===")
-        print(f"Income Threshold Method:")
-        print(f"  Poverty rate: {poverty_target_analysis['income_threshold']['poverty_rate']:.2f}%")
-        print(f"  Total in poverty: {poverty_target_analysis['income_threshold']['total_in_poverty']}")
-        print(f"Multi-Factor Method:")
-        print(f"  Poverty rate: {poverty_target_analysis['multi_factor']['poverty_rate']:.2f}%")
-        print(f"  Total in poverty: {poverty_target_analysis['multi_factor']['total_in_poverty']}")
+        # Accuracy analysis (check for extreme outliers)
+        numerical_cols = self.df.select_dtypes(include=[np.number]).columns
+        outlier_percentage = 0
+        for col in numerical_cols:
+            Q1 = self.df[col].quantile(0.25)
+            Q3 = self.df[col].quantile(0.75)
+            IQR = Q3 - Q1
+            outliers = ((self.df[col] < Q1 - 3 * IQR) | (self.df[col] > Q3 + 3 * IQR)).sum()
+            outlier_percentage += outliers / len(self.df)
         
-        # Print specific analysis results
-        print(f"\n=== INFORMAL SECTOR ANALYSIS (15-24 years, Ambato) ===")
-        print(f"Total persons in informal sector: {informal_analysis.get('total_persons', 0)}")
-        print(f"Percentage of total population: {informal_analysis.get('percentage_of_total', 0):.2f}%")
-        print(f"Average income: ${informal_analysis.get('employment_characteristics', {}).get('avg_income', 0):.2f}")
-        print(f"Average work hours: {informal_analysis.get('employment_characteristics', {}).get('avg_work_hours', 0):.1f} hours/week")
+        outlier_percentage /= len(numerical_cols)
+        accuracy_score = 1.0 - outlier_percentage
+        quality_metrics['accuracy'] = {
+            'score': accuracy_score,
+            'outlier_percentage': outlier_percentage * 100
+        }
         
-        print(f"\n=== UNDEREMPLOYMENT ANALYSIS (Ambato) ===")
-        print(f"Total underemployed due to insufficient income: {underemployment_analysis.get('underemployed_due_to_income', 0)}")
-        print(f"Percentage of city population: {underemployment_analysis.get('percentage_income_underemployed', 0):.2f}%")
-        print(f"Subempleado: {underemployment_analysis.get('underemployment_by_condition', {}).get('subempleado', 0)}")
-        print(f"Ocupado parcial: {underemployment_analysis.get('underemployment_by_condition', {}).get('ocupado_parcial', 0)}")
+        # Overall quality score
+        quality_metrics['overall_score'] = (
+            completeness_score * 0.4 + 
+            consistency_score * 0.3 + 
+            accuracy_score * 0.3
+        )
         
-        print(f"\n=== PREDICTIONS ===")
-        print(f"Informal sector growth rate: {informal_prediction.get('growth_rate', 0):.2f}")
-        print(f"Predicted informal sector next period: {informal_prediction.get('predicted_next_period', 0):.0f}")
-        print(f"Underemployment trend: {underemployment_prediction.get('trend_direction', 'stable')}")
-        print(f"Predicted underemployed next period: {underemployment_prediction.get('predicted_next_period', 0):.0f}")
+        self.analysis_results['data_quality'] = quality_metrics
+        return quality_metrics
+    
+    def run_complete_analysis(self) -> Dict:
+        """Run complete data analysis pipeline"""
+        print("Starting comprehensive data analysis...")
         
-        return self.analysis_results
+        # Load data if not already loaded
+        if self.df is None:
+            self.load_data()
+        
+        if self.df is None:
+            return {}
+        
+        # Run all analysis components
+        analysis_results = {
+            'basic_info': self.get_basic_info(),
+            'feature_types': self.identify_feature_types(),
+            'numerical_analysis': self.analyze_numerical_features(),
+            'categorical_analysis': self.analyze_categorical_features(),
+            'poverty_indicators': self.identify_poverty_indicators(),
+            'feature_importance': self.generate_feature_importance_ranking(),
+            'cross_indicator_importance': self.compare_feature_importance_across_indicators(),
+            'data_quality': self.analyze_data_quality()
+        }
+        
+        # Generate summary statistics
+        summary = self._generate_analysis_summary(analysis_results)
+        analysis_results['summary'] = summary
+        
+        self.analysis_results = analysis_results
+        
+        print("Data analysis completed successfully!")
+        return analysis_results
+    
+    def _generate_analysis_summary(self, results: Dict) -> Dict:
+        """Generate summary of analysis results"""
+        summary = {
+            'dataset_size': f"{results['basic_info']['shape'][0]:,} rows, {results['basic_info']['shape'][1]} columns",
+            'data_quality_score': f"{results['data_quality']['overall_score']:.2%}",
+            'poverty_indicators_found': len(results['poverty_indicators']),
+            'top_features': [feature for feature, _ in results['feature_importance'][:5]],
+            'missing_data_percentage': f"{results['data_quality']['completeness']['missing_percentage']:.1f}%",
+            'data_issues': len(results['data_quality']['consistency']['issues'])
+        }
+        return summary
     
     def analyze_informal_sector_by_age(self, age_min: int = 15, age_max: int = 24, 
                                      sector_id: int = 2, ciudad_id: int = 10150) -> Dict:
@@ -335,8 +467,8 @@ class DataAnalyzer:
         # Filter data for specific city
         city_data = self.df[self.df['ciudad_id'] == ciudad_id]
         
-        # Define underemployment conditions (condact_id: 2, 3)
-        underemployment_conditions = [2, 3]  # Subempleado, Ocupado parcial o empleo insuficiente
+        # Define underemployment conditions (condact_id: 2, 3, 1)
+        underemployment_conditions = [2, 3, 1]  # Subempleado, Ocupado parcial o desempleado
         
         # Filter for underemployment
         underemployed = city_data[city_data['condact_id'].isin(underemployment_conditions)]

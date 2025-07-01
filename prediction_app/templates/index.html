@@ -4,7 +4,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Análisis Laboral y Económico - Sistema de IA</title>
+	<title>Análisis de Pobreza - Sistema de IA Predictivo</title>
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 	<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
@@ -19,9 +19,9 @@
 					<div class="col-md-8">
 						<h1 class="mb-0">
 							<i class="fas fa-chart-line me-3"></i>
-							Sistema de Análisis Laboral y Económico
+							Sistema de Análisis de Pobreza
 						</h1>
-						<p class="mb-0 mt-2">Análisis predictivo de empleo informal y subempleo en Ambato</p>
+						<p class="mb-0 mt-2">Análisis predictivo y comprensivo de indicadores de pobreza</p>
 					</div>
 					<div class="col-md-4 text-end">
 						<div class="health-status">
@@ -50,14 +50,15 @@
 							<form id="uploadForm" enctype="multipart/form-data">
 								<div class="mb-4">
 									<label for="fileInput" class="form-label">
-										<strong>Seleccionar Archivo Excel</strong>
+										<strong>Seleccionar Archivo Excel o CSV</strong>
 									</label>
 									<div class="upload-area" id="uploadArea">
 										<div class="upload-content">
 											<i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-											<p class="mb-2">Arrastra y suelta tu archivo Excel aquí</p>
-											<p class="text-muted small">o haz clic para seleccionar</p>
-											<input type="file" id="fileInput" name="file" accept=".xlsx,.xls"
+											<p class="mb-2">Arrastra y suelta tu archivo aquí</p>
+											<p class="text-muted small">o haz clic para seleccionar (.xlsx, .xls, .csv)
+											</p>
+											<input type="file" id="fileInput" name="file" accept=".xlsx,.xls,.csv"
 												class="d-none">
 											<button type="button" class="btn btn-outline-primary"
 												onclick="document.getElementById('fileInput').click()">
@@ -84,13 +85,13 @@
 									</label>
 									<select id="modelType" name="model_type" class="form-select">
 										<option value="neural">Red Neuronal (Recomendado)</option>
-										<option value="linear">Modelo Lineal</option>
 										<option value="logistic">Modelo Logístico</option>
+										<option value="linear">Modelo Lineal</option>
 									</select>
 									<div class="form-text">
 										<i class="fas fa-info-circle me-1"></i>
-										<span id="modelDescription">Red Neuronal: Análisis avanzado de patrones
-											laborales</span>
+										<span id="modelDescription">Red Neuronal: Análisis avanzado con alta
+											precisión</span>
 									</div>
 								</div>
 
@@ -102,7 +103,7 @@
 									</button>
 									<button type="submit" class="btn btn-primary" id="predictBtn" disabled>
 										<i class="fas fa-magic me-2"></i>
-										Realizar Análisis
+										Realizar Análisis Completo
 									</button>
 									<button type="button" class="btn btn-outline-info" onclick="downloadTemplate()">
 										<i class="fas fa-download me-2"></i>
@@ -113,12 +114,44 @@
 						</div>
 					</div>
 
+					<!-- Data Analysis Section -->
+					<div id="analysisSection" class="card shadow-sm mb-4 d-none">
+						<div class="card-header bg-info text-white">
+							<h5 class="mb-0">
+								<i class="fas fa-chart-pie me-2"></i>
+								Análisis de Datos
+							</h5>
+						</div>
+						<div class="card-body">
+							<!-- Data Quality Cards -->
+							<div class="row mb-4" id="dataQualityCards">
+								<!-- Data quality cards will be inserted here -->
+							</div>
+
+							<!-- Insights Section -->
+							<div id="insightsSection" class="mb-4">
+								<h6><i class="fas fa-lightbulb me-2"></i>Insights del Análisis</h6>
+								<div id="insightsList">
+									<!-- Insights will be inserted here -->
+								</div>
+							</div>
+
+							<!-- Feature Importance -->
+							<div id="featureImportanceSection" class="mb-4">
+								<h6><i class="fas fa-star me-2"></i>Características Más Importantes</h6>
+								<div id="featureImportanceList">
+									<!-- Feature importance will be inserted here -->
+								</div>
+							</div>
+						</div>
+					</div>
+
 					<!-- Results Section -->
 					<div id="resultsSection" class="card shadow-sm mb-4 d-none">
 						<div class="card-header bg-success text-white">
 							<h5 class="mb-0">
 								<i class="fas fa-chart-bar me-2"></i>
-								Resultados del Análisis
+								Resultados de Predicción
 							</h5>
 						</div>
 						<div class="card-body">
@@ -127,16 +160,33 @@
 								<!-- Summary cards will be inserted here -->
 							</div>
 
+							<!-- Prediction Quality -->
+							<div id="predictionQualitySection" class="mb-4">
+								<h6><i class="fas fa-award me-2"></i>Calidad de Predicción</h6>
+								<div id="predictionQualityInfo">
+									<!-- Prediction quality info will be inserted here -->
+								</div>
+							</div>
+
+							<!-- Recommendations -->
+							<div id="recommendationsSection" class="mb-4">
+								<h6><i class="fas fa-comments me-2"></i>Recomendaciones</h6>
+								<div id="recommendationsList">
+									<!-- Recommendations will be inserted here -->
+								</div>
+							</div>
+
 							<!-- Results Table -->
 							<div class="table-responsive">
 								<table class="table table-striped table-hover" id="resultsTable">
 									<thead class="table-dark">
 										<tr>
 											<th>ID Persona</th>
-											<th>Análisis</th>
-											<th>Estado Laboral</th>
+											<th>Predicción</th>
+											<th>Estado</th>
 											<th>Probabilidad</th>
 											<th>Confianza</th>
+											<th>Nivel Riesgo</th>
 											<th>Modelo</th>
 										</tr>
 									</thead>
@@ -156,6 +206,10 @@
 									<i class="fas fa-file-csv me-2"></i>
 									Exportar a CSV
 								</button>
+								<button type="button" class="btn btn-warning" onclick="exportAnalysisReport()">
+									<i class="fas fa-file-pdf me-2"></i>
+									Reporte Completo
+								</button>
 							</div>
 						</div>
 					</div>
@@ -168,181 +222,96 @@
 						<div class="card-header bg-info text-white">
 							<h6 class="mb-0">
 								<i class="fas fa-chart-pie me-2"></i>
-								Tipos de Análisis Disponibles
+								Capacidades de Análisis
 							</h6>
 						</div>
 						<div class="card-body">
 							<div class="mb-3">
 								<h6 class="text-primary">
-									<i class="fas fa-users me-2"></i>
-									Empleo Informal (15-24 años)
+									<i class="fas fa-brain me-2"></i>
+									Análisis Predictivo
 								</h6>
 								<p class="small text-muted">
-									Identifica personas jóvenes en el sector informal de Ambato, analizando patrones de
-									empleo y características demográficas.
-								</p>
-							</div>
-							<div class="mb-3">
-								<h6 class="text-warning">
-									<i class="fas fa-exclamation-triangle me-2"></i>
-									Subempleo por Ingresos
-								</h6>
-								<p class="small text-muted">
-									Detecta condiciones de subempleo debido a insuficiencia de ingresos en Ambato,
-									incluyendo empleo parcial y trabajo insuficiente.
+									Predicción de pobreza usando modelos de machine learning avanzados con análisis de
+									confianza.
 								</p>
 							</div>
 							<div class="mb-3">
 								<h6 class="text-success">
 									<i class="fas fa-chart-line me-2"></i>
-									Tendencias Predictivas
+									Análisis de Datos
 								</h6>
 								<p class="small text-muted">
-									Proyecciones sobre el crecimiento del empleo informal y tendencias de subempleo
-									basadas en análisis histórico.
+									Evaluación de calidad de datos, identificación de patrones y análisis estadístico
+									completo.
+								</p>
+							</div>
+							<div class="mb-3">
+								<h6 class="text-warning">
+									<i class="fas fa-exclamation-triangle me-2"></i>
+									Evaluación de Riesgo
+								</h6>
+								<p class="small text-muted">
+									Clasificación de riesgo de pobreza con niveles de confianza y recomendaciones
+									específicas.
+								</p>
+							</div>
+							<div class="mb-3">
+								<h6 class="text-info">
+									<i class="fas fa-star me-2"></i>
+									Importancia de Características
+								</h6>
+								<p class="small text-muted">
+									Identificación de las variables más importantes para la predicción de pobreza.
 								</p>
 							</div>
 						</div>
 					</div>
 
-					<!-- Excel Structure -->
+					<!-- Model Information -->
 					<div class="card shadow-sm mb-4">
-						<div class="card-header bg-light">
+						<div class="card-header bg-secondary text-white">
 							<h6 class="mb-0">
-								<i class="fas fa-table me-2"></i>
-								Estructura del Excel
+								<i class="fas fa-cogs me-2"></i>
+								Información de Modelos
 							</h6>
 						</div>
 						<div class="card-body">
-							<p class="small text-muted mb-3">
-								Tu archivo Excel debe contener datos laborales y demográficos con las siguientes
-								columnas:
-							</p>
-							<div class="table-responsive">
-								<table class="table table-sm">
-									<thead>
-										<tr>
-											<th>Columna</th>
-											<th>Tipo</th>
-											<th>Rango</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr>
-											<td>persona_key</td>
-											<td>Entero</td>
-											<td>ID único</td>
-										</tr>
-										<tr>
-											<td>tiempo_id</td>
-											<td>Entero</td>
-											<td>YYYYMM</td>
-										</tr>
-										<tr>
-											<td>anio</td>
-											<td>Entero</td>
-											<td>2000-2030</td>
-										</tr>
-										<tr>
-											<td>mes</td>
-											<td>Entero</td>
-											<td>1-12</td>
-										</tr>
-										<tr>
-											<td>sector_id</td>
-											<td>Entero</td>
-											<td>0-9</td>
-										</tr>
-										<tr>
-											<td>condact_id</td>
-											<td>Entero</td>
-											<td>0-9</td>
-										</tr>
-										<tr>
-											<td>sexo</td>
-											<td>Entero</td>
-											<td>1-2</td>
-										</tr>
-										<tr>
-											<td>ciudad_id</td>
-											<td>Entero</td>
-											<td>ID ciudad</td>
-										</tr>
-										<tr>
-											<td>nivel_instruccion</td>
-											<td>Entero</td>
-											<td>0-5</td>
-										</tr>
-										<tr>
-											<td>estado_civil</td>
-											<td>Entero</td>
-											<td>0-6</td>
-										</tr>
-										<tr>
-											<td>edad</td>
-											<td>Entero</td>
-											<td>0-120</td>
-										</tr>
-										<tr>
-											<td>ingreso_laboral</td>
-											<td>Decimal</td>
-											<td>≥ 0</td>
-										</tr>
-										<tr>
-											<td>ingreso_per_capita</td>
-											<td>Decimal</td>
-											<td>≥ 0</td>
-										</tr>
-										<tr>
-											<td>horas_trabajo_semana</td>
-											<td>Entero</td>
-											<td>0-168</td>
-										</tr>
-										<tr>
-											<td>desea_trabajar_mas</td>
-											<td>Entero</td>
-											<td>0-4</td>
-										</tr>
-										<tr>
-											<td>disponible_trabajar_mas</td>
-											<td>Entero</td>
-											<td>0-1</td>
-										</tr>
-									</tbody>
-								</table>
+							<div id="modelInfo">
+								<!-- Model information will be loaded here -->
 							</div>
 						</div>
 					</div>
 
-					<!-- Validation Results -->
-					<div id="validationSection" class="card shadow-sm mb-4 d-none">
-						<div class="card-header bg-light">
+					<!-- System Status -->
+					<div class="card shadow-sm">
+						<div class="card-header bg-dark text-white">
 							<h6 class="mb-0">
-								<i class="fas fa-check-circle me-2"></i>
-								Validación del Archivo
+								<i class="fas fa-server me-2"></i>
+								Estado del Sistema
 							</h6>
 						</div>
 						<div class="card-body">
-							<div id="validationResults">
-								<!-- Validation results will be inserted here -->
+							<div id="systemStatus">
+								<!-- System status will be loaded here -->
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
+	</div>
 
-		<!-- Loading Modal -->
-		<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content">
-					<div class="modal-body text-center py-4">
-						<div class="spinner-border text-primary mb-3" role="status">
-							<span class="visually-hidden">Cargando...</span>
-						</div>
-						<h5 id="loadingTitle">Procesando...</h5>
-						<p id="loadingMessage" class="text-muted">Por favor espera mientras procesamos tu archivo</p>
+	<!-- Loading Modal -->
+	<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-body text-center">
+					<div class="spinner-border text-primary mb-3" role="status">
+						<span class="visually-hidden">Loading...</span>
 					</div>
+					<h5>Procesando Análisis</h5>
+					<p class="text-muted">Esto puede tomar unos momentos...</p>
 				</div>
 			</div>
 		</div>
@@ -350,7 +319,7 @@
 
 	<!-- Scripts -->
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 

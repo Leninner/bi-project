@@ -344,112 +344,263 @@ chmod 755 data/
 3. **Dashboard**: Crear interfaz web para visualización
 4. **Automatización**: Programar ejecución automática del pipeline
 
-# Poverty Prediction ML Pipeline
+# Sistema de Análisis de Pobreza - ML Pipeline y Aplicación Web
 
-Este proyecto implementa un pipeline completo de machine learning para la predicción de pobreza, con opciones flexibles para entrenar diferentes tipos de modelos.
+## 📋 Descripción General
 
-## Características
+Este proyecto implementa un sistema completo de análisis predictivo de pobreza utilizando machine learning, con capacidades avanzadas de análisis de datos y una interfaz web moderna para la visualización de resultados.
 
-- **Análisis de datos completo** con visualizaciones
-- **Ingeniería de características** automática
-- **Múltiples tipos de modelos**:
-  - Modelos lineales (Regresión Lineal, Logística)
-  - Redes neuronales (Clasificación y Regresión)
-- **Comparación automática** de modelos
-- **Generación de reportes** y visualizaciones
-- **Interfaz de línea de comandos** para selección de modelos
+## 🚀 Características Principales
 
-## Instalación
+### 🔬 Análisis de Datos Avanzado
+- **Análisis Exploratorio Completo**: Evaluación automática de calidad de datos, identificación de patrones y estadísticas descriptivas
+- **Detección de Indicadores de Pobreza**: Identificación automática de variables relacionadas con pobreza
+- **Análisis de Correlaciones**: Cálculo de importancia de características basado en correlaciones con indicadores de pobreza
+- **Evaluación de Calidad de Datos**: Métricas de completitud, consistencia y precisión
 
-1. Clonar el repositorio
-2. Crear un entorno virtual:
-```bash
-python -m venv venv
-source venv/bin/activate  # En Linux/Mac
-# o
-venv\Scripts\activate  # En Windows
+### 🤖 Modelos de Machine Learning
+- **Redes Neuronales**: Modelos de deep learning para predicción de alta precisión
+- **Modelos Lineales**: Regresión logística y lineal para análisis estadístico robusto
+- **Selección Automática de Modelos**: Evaluación automática y selección del mejor modelo
+- **Validación Cruzada**: Evaluación robusta del rendimiento de los modelos
+
+### 📊 Aplicación Web Interactiva
+- **Interfaz Moderna**: Diseño responsive con Bootstrap 5 y Font Awesome
+- **Análisis en Tiempo Real**: Procesamiento y visualización inmediata de resultados
+- **Múltiples Formatos de Entrada**: Soporte para Excel (.xlsx, .xls) y CSV
+- **Exportación de Resultados**: Exportación a Excel, CSV y reportes completos
+
+### 📈 Visualización y Reportes
+- **Dashboard Interactivo**: Métricas de calidad de datos, insights y recomendaciones
+- **Análisis de Confianza**: Niveles de confianza y evaluación de riesgo
+- **Recomendaciones Automáticas**: Sugerencias basadas en los resultados del análisis
+- **Reportes Detallados**: Información completa sobre predicciones y calidad del modelo
+
+## 🏗️ Arquitectura del Sistema
+
+```
+project/
+├── ml_pipeline/           # Pipeline de machine learning
+│   ├── main.py           # Punto de entrada principal
+│   ├── data_analyzer.py  # Análisis exploratorio de datos
+│   ├── feature_engineer.py # Ingeniería de características
+│   ├── model_trainer.py  # Entrenamiento de modelos
+│   ├── linear_models.py  # Modelos lineales
+│   ├── neural_network.py # Redes neuronales
+│   └── requirements.txt  # Dependencias del pipeline
+├── prediction_app/        # Aplicación web Flask
+│   ├── app.py           # Servidor Flask principal
+│   ├── models/          # Carga y gestión de modelos
+│   ├── utils/           # Utilidades de procesamiento
+│   ├── static/          # Archivos estáticos (CSS, JS)
+│   ├── templates/       # Plantillas HTML
+│   └── requirements.txt # Dependencias de la app
+├── data/                # Datos de entrenamiento
+├── models/              # Modelos entrenados
+└── ml_results/          # Resultados del entrenamiento
 ```
 
-3. Instalar dependencias:
+## 🛠️ Instalación y Configuración
+
+### Prerrequisitos
+- Python 3.8+
+- pip
+- Git
+
+### Instalación
+
+1. **Clonar el repositorio**
 ```bash
+git clone <repository-url>
+cd project
+```
+
+2. **Crear entorno virtual**
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# o
+venv\Scripts\activate     # Windows
+```
+
+3. **Instalar dependencias del pipeline**
+```bash
+cd ml_pipeline
 pip install -r requirements.txt
 ```
 
-## Uso
+4. **Instalar dependencias de la aplicación**
+```bash
+cd ../prediction_app
+pip install -r requirements.txt
+```
 
-### Interfaz de Línea de Comandos
+## 🚀 Uso del Sistema
 
-El pipeline se ejecuta a través del archivo `main.py` con opciones para seleccionar qué modelos entrenar:
-
-#### Opciones disponibles:
-
-- `--models linear`: Entrenar solo modelos lineales
-- `--models neural`: Entrenar solo redes neuronales  
-- `--models both`: Entrenar ambos tipos de modelos (por defecto)
-
-#### Ejemplos de uso:
+### 1. Entrenamiento de Modelos
 
 ```bash
+# Entrenar todos los modelos
+python ml_pipeline/main.py --models both
+
 # Entrenar solo modelos lineales
 python ml_pipeline/main.py --models linear
 
 # Entrenar solo redes neuronales
 python ml_pipeline/main.py --models neural
 
-# Entrenar ambos tipos de modelos
-python ml_pipeline/main.py --models both
-
-# Con opciones adicionales
-python ml_pipeline/main.py --models linear --data_path data/mi_dataset.csv --output_dir resultados
+# Especificar directorio de datos personalizado
+python ml_pipeline/main.py --data_path data/mi_dataset.csv
 ```
 
-#### Argumentos completos:
+### 2. Ejecutar la Aplicación Web
+
+```bash
+cd prediction_app
+python app.py
+```
+
+La aplicación estará disponible en: `http://localhost:5000`
+
+### 3. Uso de la Interfaz Web
+
+1. **Cargar Datos**: Arrastra y suelta un archivo Excel/CSV o haz clic para seleccionar
+2. **Validar Archivo**: Verifica la estructura y calidad de los datos
+3. **Seleccionar Modelo**: Elige entre red neuronal, logístico o lineal
+4. **Realizar Análisis**: Ejecuta el análisis completo con predicciones
+5. **Revisar Resultados**: Explora las métricas, insights y recomendaciones
+6. **Exportar**: Descarga los resultados en diferentes formatos
+
+## 📊 Estructura de Datos
+
+### Formato de Entrada Requerido
+
+El archivo de entrada debe contener las siguientes columnas:
+
+| Columna                 | Tipo    | Descripción                      | Rango         |
+| ----------------------- | ------- | -------------------------------- | ------------- |
+| persona_key             | Entero  | ID único de persona              | -             |
+| tiempo_id               | Entero  | Identificador temporal (YYYYMM)  | 200001-203012 |
+| anio                    | Entero  | Año                              | 2000-2030     |
+| mes                     | Entero  | Mes                              | 1-12          |
+| sector_id               | Entero  | ID del sector económico          | 0-9           |
+| condact_id              | Entero  | ID de condición de actividad     | 0-9           |
+| sexo                    | Entero  | Género (1=Hombre, 2=Mujer)       | 1-2           |
+| ciudad_id               | Entero  | ID de la ciudad                  | -             |
+| nivel_instruccion       | Entero  | Nivel de educación               | 0-5           |
+| estado_civil            | Entero  | Estado civil                     | 0-6           |
+| edad                    | Entero  | Edad en años                     | 0-120         |
+| ingreso_laboral         | Decimal | Ingreso laboral                  | ≥ 0           |
+| ingreso_per_capita      | Decimal | Ingreso per cápita               | ≥ 0           |
+| horas_trabajo_semana    | Entero  | Horas trabajadas por semana      | 0-168         |
+| desea_trabajar_mas      | Entero  | Deseo de trabajar más            | 0-4           |
+| disponible_trabajar_mas | Entero  | Disponibilidad para trabajar más | 0-1           |
+
+### Formato de Salida
+
+Los resultados incluyen:
+
+- **Predicción de Pobreza**: 0 (No pobre) o 1 (Pobre)
+- **Probabilidad**: Valor entre 0 y 1
+- **Confianza**: Nivel de confianza de la predicción
+- **Nivel de Riesgo**: Clasificación (Bajo, Moderado, Alto, Muy Alto)
+- **Métricas de Calidad**: Evaluación de la calidad de los datos y predicciones
+
+## 🔧 Configuración Avanzada
+
+### Parámetros del Pipeline
 
 ```bash
 python ml_pipeline/main.py --help
 ```
 
-Argumentos disponibles:
-- `--data_path`: Ruta al archivo CSV del dataset (por defecto: `../data/poverty_dataset.csv`)
-- `--output_dir`: Directorio para guardar resultados (por defecto: `ml_results`)
-- `--target_method`: Método para crear la variable objetivo (por defecto: `income_threshold`)
-- `--models`: Tipos de modelos a entrenar (`linear`, `neural`, `both`)
+Opciones disponibles:
+- `--data_path`: Ruta al archivo de datos
+- `--output_dir`: Directorio de salida para resultados
+- `--models`: Tipos de modelos a entrenar (linear/neural/both)
+- `--target_method`: Método para crear variable objetivo
+- `--models_dir`: Directorio para modelos centralizados
 
-### Flujo del Pipeline
+### Configuración de la Aplicación
 
-1. **Análisis de Datos**: Exploración completa del dataset
-2. **Ingeniería de Características**: Preparación y transformación de datos
-3. **Entrenamiento de Modelos**: Según la selección del usuario
-4. **Comparación de Modelos**: Evaluación automática del rendimiento
-5. **Generación de Reportes**: Guardado de modelos, gráficos y métricas
+Variables de entorno disponibles:
+- `FLASK_ENV`: Entorno de Flask (development/production)
+- `UPLOAD_FOLDER`: Directorio de archivos temporales
+- `MAX_FILE_SIZE`: Tamaño máximo de archivo (bytes)
 
-### Salidas
+## 📈 Métricas y Evaluación
 
-El pipeline genera:
-- **Modelos entrenados** en formato `.pkl` (lineales) y `.h5` (redes neuronales)
-- **Gráficos de comparación** de rendimiento
-- **Reportes de análisis** de datos
-- **Resumen de resultados** en formato JSON
-- **Visualizaciones** de importancia de características y historial de entrenamiento
+### Métricas de Modelo
+- **Precisión**: Exactitud general de las predicciones
+- **Recall**: Sensibilidad para detectar casos de pobreza
+- **F1-Score**: Media armónica de precisión y recall
+- **AUC-ROC**: Área bajo la curva ROC
 
-## Estructura del Proyecto
+### Métricas de Calidad de Datos
+- **Completitud**: Porcentaje de datos no faltantes
+- **Consistencia**: Verificación de coherencia lógica
+- **Precisión**: Detección de valores atípicos
+- **Puntuación General**: Combinación ponderada de todas las métricas
 
+## 🛡️ Características de Seguridad
+
+- **Validación de Archivos**: Verificación de tipo, tamaño y estructura
+- **Sanitización de Datos**: Limpieza automática de datos de entrada
+- **Manejo de Errores**: Gestión robusta de excepciones
+- **Archivos Temporales**: Limpieza automática de archivos temporales
+
+## 🔄 Mantenimiento y Monitoreo
+
+### Logs y Monitoreo
+- Logs detallados de entrenamiento y predicción
+- Métricas de rendimiento del sistema
+- Monitoreo de salud de la aplicación
+
+### Actualización de Modelos
+```bash
+# Reentrenar modelos con nuevos datos
+python ml_pipeline/main.py --data_path data/nuevos_datos.csv
+
+# Los modelos se actualizan automáticamente en la aplicación
 ```
-project/
-├── ml_pipeline/
-│   ├── main.py              # Punto de entrada con CLI
-│   ├── model_trainer.py     # Orquestador principal
-│   ├── data_analyzer.py     # Análisis de datos
-│   ├── feature_engineer.py  # Ingeniería de características
-│   ├── linear_models.py     # Modelos lineales
-│   └── neural_network.py    # Redes neuronales
-├── data/
-│   └── poverty_dataset.csv  # Dataset de ejemplo
-└── ml_results/              # Resultados generados
-```
 
-## Notas
+## 🤝 Contribución
 
-- Los modelos se comparan automáticamente usando métricas apropiadas (R² para regresión, accuracy para clasificación)
-- Solo se generan reportes y comparaciones si se entrenan modelos
-- El pipeline es robusto y maneja errores gracefully
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+## 📝 Licencia
+
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+
+## 📞 Soporte
+
+Para soporte técnico o preguntas:
+- Crear un issue en el repositorio
+- Contactar al equipo de desarrollo
+- Revisar la documentación técnica en `/docs`
+
+## 🔮 Roadmap
+
+### Próximas Características
+- [ ] Análisis de series temporales
+- [ ] Modelos de ensemble avanzados
+- [ ] API REST para integración externa
+- [ ] Dashboard de monitoreo en tiempo real
+- [ ] Análisis geográfico y espacial
+- [ ] Integración con bases de datos externas
+
+### Mejoras Planificadas
+- [ ] Optimización de rendimiento
+- [ ] Interfaz móvil responsive
+- [ ] Reportes automatizados por email
+- [ ] Integración con sistemas de BI
+- [ ] Análisis de causalidad
+- [ ] Modelos interpretables (SHAP, LIME)
+
+---
+
+**Desarrollado con ❤️ para el análisis de pobreza y desarrollo social**
