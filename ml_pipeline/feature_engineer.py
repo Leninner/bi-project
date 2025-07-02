@@ -372,12 +372,12 @@ class FeatureEngineer:
             
             # Employment condition factor (underemployment)
             if 'condact_id' in df.columns:
-                underemployment_conditions = [2, 3]  # Subempleado, Ocupado parcial
+                underemployment_conditions = [2, 3, 1]  # Subempleado, Ocupado parcial, Desempleado
                 condition_factor = df['condact_id'].isin(underemployment_conditions).astype(int)
                 factors.append(condition_factor)
             
             if factors:
-                # Sum all factors and create binary target (at least 2 factors indicate poverty)
+                # Suma todos los factores y crea un target binario (al menos 2 factores indican pobreza)
                 poverty_target = pd.concat(factors, axis=1).sum(axis=1)
                 poverty_target = (poverty_target >= 2).astype(int)
             else:

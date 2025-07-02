@@ -706,6 +706,7 @@ class ModelTrainer:
         
         # Step 1: Data Analysis
         analysis_results = self.run_data_analysis()
+        print(f"Analysis results: {analysis_results}")
         
         # Step 2: Feature Engineering
         X, y = self.prepare_features(target_method)
